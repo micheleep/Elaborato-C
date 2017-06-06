@@ -7,24 +7,27 @@ EXECUTABLE=calcola.x
 
 # config
 CC=gcc
-CFLAGS= -c
+CFLAGS= -c -w
 LD=gcc
+LDFLAGS= -Llib
 
 # target
 all: $(EXECUTABLE)
 	@echo Building $(EXECUTABLE)
+	@echo Generating doxygen
+	@doxygen
 
 $(EXECUTABLE): $(OBJS)
 	@echo Building $@
-	@ $(LD) -o $@ $^
+	@ $(LD) $(LDFLAGS) -o $@ $^ -lpthread
 
 function.o: function.c function.h
 	@echo Building $@
-	@ $(CC) $(CFLAGS) -o $@ $< -lpthread
+	@ $(CC) $(CFLAGS) -o $@ $<
 
 calcola.o: calcola.c function.h
 	@echo Building $@
-	@ $(CC) $(CFLAGS) -o $@ $< -lpthread
+	@ $(CC) $(CFLAGS) -o $@ $<
 
 clean:
 	rm -f $(EXECUTABLE)
