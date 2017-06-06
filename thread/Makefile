@@ -7,7 +7,7 @@ EXECUTABLE=calcola.x
 
 # config
 CC=gcc
-CFLAGS= -c -w
+CFLAGS= -c -w -std=c99
 LD=gcc
 LDFLAGS= -Llib
 
@@ -32,5 +32,6 @@ calcola.o: calcola.c function.h
 clean:
 	rm -f $(EXECUTABLE)
 	rm -f $(OBJS)
+	rm -rf html 
 
 .phony: all clean

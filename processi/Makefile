@@ -7,7 +7,7 @@ EXECUTABLE=calcola.x worker.x
 
 # config
 CC=gcc
-CFLAGS= -c -w
+CFLAGS= -c -w -std=c99
 LD=gcc
 
 # target
@@ -34,5 +34,5 @@ function.o: function.c
 clean:
 	rm -f $(EXECUTABLE)
 	rm -f $(OBJS)
-
+	rm -rf html
 .phony: all clean
