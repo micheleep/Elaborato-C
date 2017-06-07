@@ -33,9 +33,9 @@ void print(char string[]){
  * @param string[] puntatore ad una stringa qualsiasi
  */
 void print_error(char string[]){
-    write(2, string, strlen(string));                               // scrivo su stderror
+    write(2, string, strlen(string));                                // scrivo su stderror
     close_all();                                                     // chiudo IPC
-    exit(-1);                                                        // termino programma
+    exit(0);                                                        // termino programma
 }
 
 /**
@@ -103,11 +103,8 @@ int get_memoria_condivisa_padre(key_t key, int ordine){
 
     int shmid = 0;
 
-    if ((shmid = shmget(key, ordine*ordine*sizeof(int), 0666 | IPC_CREAT | IPC_EXCL)) == -1){       // creo l'area di memoria condivisa, con IPC_CREAT
+    if ((shmid = shmget(key, ordine*ordine*sizeof(int), 0666 | IPC_CREAT | IPC_EXCL)) == -1)        // creo l'area di memoria condivisa, con IPC_CREAT
         print_error("Errore durante la creazione del segmento di memoria in worker.c!\n");          // controllo il valore restituito, se -1 errore
-        close_all();
-        return 0;
-    }
 
     return shmid;                                                                                   // ritorno il valore corretto
 }
@@ -351,7 +348,7 @@ void close_all(){
     close(fd_b);
     close(fd_c);
 
-    kill(-getpid(), 0);                                                                         // killo tutti i processi appartenenti al padre
+    kill(-getpid(), 9);                                                                         // killo tutti i processi appartenenti al padre
 
     print("Terminazione del programma!\n");
     exit(0);

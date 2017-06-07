@@ -183,7 +183,7 @@ int *scrivi_matrice(int shmid, int file_descriptor, int numero_valori, int ordin
     for (int j = 0; j < ordine_matrice*ordine_matrice; j++)
         *(shared_memory + j) = valori[j];                 // salvo negli indirizzi di memoria tutti gli interi
 
-        memset(buf, 0, sizeof(int)*numero_valori);          // resetto il buffer, potrebbero esserci degli errori nella lettura della seconda matrice
+    memset(buf, 0, sizeof(int)*numero_valori);          // resetto il buffer, potrebbero esserci degli errori nella lettura della seconda matrice
 
     return shared_memory;
 }
@@ -279,8 +279,6 @@ void close_all(){
     close(fd_a);                                                                                // chiusura dei file descriptor
     close(fd_b);
     close(fd_c);
-
-    kill(getpid(), 0);                                                                           // killo tutti i processi appartenenti al padre
 
     print("Terminazione del programma!\n");
     exit(0);
