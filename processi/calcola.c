@@ -26,6 +26,9 @@
 
 int main(int argc, char *argv[]) {
 
+    if (argc != 6)                                                                            // controllo del numero corretto degli argomenti passati dall'utente
+        print_error("Inserire il numero corretto di argomenti!\nModalità di inserimento : <matA> <matB> <matC> <ordine_matrice> <numero_processi>\n");
+
     int ordine_mat_a, ordine_mat_b;                                                             // variabile dove salvo l'ordine della matrice a e b
     key_t keyA, keyB, keyC_molt, keyC_sum, key_queue, key_sem;                                  // chiavi della creazione della memoria condivisa, e coda di messaggi
     int *shared_memory_a, *shared_memory_b, *shared_memory_c_molt, *shared_memory_c_sum;        // indirizzo della memoria virtuale delle matrici a, b, c_molt, c_sum
@@ -53,9 +56,6 @@ int main(int argc, char *argv[]) {
     *     - controllo che il numero dei processi non sia inferiore a uno
     */
 
-     if (argc != 6)                                                                            // controllo del numero corretto degli argomenti passati dall'utente
-        print_error("Inserire il numero corretto di argomenti!\nModalità di inserimento : <matA> <matB> <matC> <ordine_matrice> <numero_processi>\n");
-
     if ((fd_a = open(argv[1], O_RDONLY, 0644)) == -1)                                           // apertura del primo file in sola lettura
         print_error("Non è possibile aprire il primo file!\n");
 
@@ -68,23 +68,14 @@ int main(int argc, char *argv[]) {
     ordine_mat_a = controllo_matrice(fd_a);                                                     // devono essere quadrate ed uguali fra di loro
     ordine_mat_b = controllo_matrice(fd_b);
 
-    if (ordine_mat_a != ordine_mat_b) {                                                         // controllo che le matrici siano uguali
-        print("Le matrici indicate nei file non sono inserite correttamente, non è possibile svolgere alcuna operazione!\n");
-        print("Modificare i parametri inseriti in input e riprovare!\n");
-        return 0;
-    }
+    if (ordine_mat_a != ordine_mat_b)                                                           // controllo che le matrici siano uguali
+        print_error("Le matrici indicate nei file non sono inserite correttamente, non è possibile svolgere alcuna operazione!\nModificare i parametri inseriti in input e riprovare!\n");
 
-    if(ordine_mat_a != atoi(argv[4])) {                                                         // controllo che l'ordine inserito da terminale sia uguale
-        print("Il valore dell'ordine inserito da terminale non corrisponde con le matrici date!\n");
-        print("Modificare il parametri inserito in input e riprovare!\n");
-        return 0;
-    }
+    if(ordine_mat_a != atoi(argv[4]))                                                           // controllo che l'ordine inserito da terminale sia uguale
+        print_error("Il valore dell'ordine inserito da terminale non corrisponde con le matrici date!\nModificare il parametri inserito in input e riprovare!\n");
 
-    if(atoi(argv[5]) < 1){                                                                      // controllo che il numero dei processi sia maggiore di 0
-        print("Il numero di processi deve essere corretto, inserire un numero maggiore di zero!\n");
-        print("Modificare il numero di processi inseriti e riprovare!\n");
-        return 0;
-    }
+    if(atoi(argv[5]) < 1)                                                                       // controllo che il numero dei processi sia maggiore di 0
+        print_error("Il numero di processi deve essere corretto, inserire un numero maggiore di zero!\nModificare il numero di processi inseriti e riprovare!\n");
 
     ///@brief Creazioni delle chaivi univoche tramite ftok(- , -);
     keyA = ftok("/tmp", 'A');                                                                   // inizializzazione delle chaivi usate per la shared memory
@@ -107,11 +98,9 @@ int main(int argc, char *argv[]) {
     shared_memory_c_molt = (int *) shmat(shmid_c_molt, NULL, 0);
 
 
-    if ((shmid_c_sum = shmget(keyC_sum, sizeof(int), 0666 | IPC_CREAT | IPC_EXCL)) == -1){      // creo una area di memoria per un intero
+    if ((shmid_c_sum = shmget(keyC_sum, sizeof(int), 0666 | IPC_CREAT | IPC_EXCL)) == -1)       // creo una area di memoria per un intero
         print_error("Errore durante la creazione del segmento di memoria in calcola.c!\n");
-        close_all();
-        return 0;
-    }
+
     shared_memory_c_sum = (int *) shmat(shmid_c_sum, NULL, 0);
 
     ///@brief Creazione della coda di messaggi
@@ -135,10 +124,8 @@ int main(int argc, char *argv[]) {
     n_operazioni = ordine_mat_a*ordine_mat_a;                                                   // numero delle operazioni da svolgere
     ///@brief Esecuzione della moltiplicazione eseguita dai processi, vengono creati tramite fork()
     for (j = 0; j < np_terminale; j++) {
-        if ((pipe(pipe_fd)) == -1) {                                                            // pipe_p_f[0] = lettura - pipe_p_f[1] = scrittura
+        if ((pipe(pipe_fd)) == -1)                                                              // pipe_p_f[0] = lettura - pipe_p_f[1] = scrittura
             print_error("Errore nella creazione della pipe!");
-            return 1;
-        }
 
         array_pipe[j] = pipe_fd[1];                                                             // nella posizione del processo metto il file_desccriptor della pipe in write
 
@@ -249,11 +236,15 @@ int main(int argc, char *argv[]) {
         write(fd_c, string, strlen(string));                                                    // scrivo su file
 
         if (counter / (ordine_mat_a-1) == 1) {                                                  // stampiamo il valore \n che corrisponde con a capo
-            write(fd_c, "\n", sizeof(char));
+            if(write(fd_c, "\n", sizeof(char)) == -1)
+                print_error("Problema scrittura su matrice!\n");
+
             counter = 0;
         }
         else {
-            write(fd_c, ";", sizeof(char));                                                     // oppure il ;
+            if(write(fd_c, ";", sizeof(char)) == -1)                                             // oppure il ;
+                print_error("Problema scrittura su matrice!\n");
+
             counter++;
         }
     }
