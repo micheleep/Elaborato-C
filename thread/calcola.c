@@ -114,6 +114,10 @@ int main(int argc, char *argv[]) {
 
     print("\n");
 
+    ///@brief Aspetto che le thread per la moltiplicazione abbiano finito l'esecuzione
+    for (int i = 0; i < ordine_mat_a*ordine_mat_b; i++)
+        pthread_join(threads[i], NULL);                                                         // aspetto che tutte le thread finiscano con l'esecuzione
+
     ///@brief Creazione delle thread per la parte della somma
     for (int i = 0; i < ordine_mat_a; i++) {
         print("Creo la thread ");
@@ -131,8 +135,8 @@ int main(int argc, char *argv[]) {
 
     }
 
-    ///@brief Aspetto che tutte le thread abbiano finito l'esecuzione
-    for (int i = 0; i < ordine_mat_a; i++)
+    ///@brief Aspetto che le thread per la somma abbiano finito l'esecuzione
+    for (int i = 0; i < ordine_mat_a; i++)\
         pthread_join(threads[i], NULL);                                                         // aspetto che tutte le thread finiscano con l'esecuzione
 
     ///@brief Stampo a video il valore della somma
@@ -177,5 +181,4 @@ int main(int argc, char *argv[]) {
     close(fd_c);
 
     pthread_exit(NULL);                                                                         // terminazione della "thread" del processo padre
-                                                                                                // se termina cosi, le altre thread continuano con l'esecuzione
 }
