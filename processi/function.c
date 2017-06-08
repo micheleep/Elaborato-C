@@ -13,6 +13,7 @@
 #include <sys/sem.h>
 #include <sys/msg.h>
 #include <signal.h>
+#include <sys/stat.h>
 #include "function.h"
 
 /**
@@ -20,7 +21,7 @@
  *
  * @param string[] puntatore ad una stringa qualsiasi
  */
-void print(char string[]){
+void print(char *string){
     if((write(1, string, strlen(string))) == -1) {
         close_all();
         exit(1);
@@ -32,7 +33,7 @@ void print(char string[]){
  *
  * @param string[] puntatore ad una stringa qualsiasi
  */
-void print_error(char string[]){
+void print_error(char *string){
     write(2, string, strlen(string));                                // scrivo su stderror
     close_all();                                                     // chiudo IPC
     exit(0);                                                        // termino programma
@@ -110,25 +111,6 @@ int get_memoria_condivisa_padre(key_t key, int ordine){
 }
 
 /**
- * Conta i caratteri che sono all'interno della matrice
- *
- * @param file_descriptor
- * @return il numero di caratteri letti
- */
-int conta_valori_matrice(int file_descriptor){
-
-    char *c;
-    int counter = 0;
-
-    lseek(file_descriptor, 0, 0);                               // mi posiziono all'inizio del file
-
-    while (read(file_descriptor, &c, 1))                        // conto tutti i valori (caratteri) che sono presenti all'interno del file
-        counter++;
-
-    return counter;                                             // ritorno il numero corretto di caratteri
-}
-
-/**
  * Inserisce in memoria condivisa la matrice che viene passata
  *
  * @param shmid
@@ -137,9 +119,12 @@ int conta_valori_matrice(int file_descriptor){
  * @param ordine_matrice passata come parametro
  * @return un puntatore alla cella di memoria condivisa di partenza
  */
-int *scrivi_matrice(int shmid, int file_descriptor, int numero_valori, int ordine_matrice){
+int *scrivi_matrice(int shmid, int file_descriptor, int ordine_matrice){
 
     int *shared_memory;                                 // puntatore alla cella di memoria condivisa iniziale
+    struct stat file_info;                              // dichiaro la struct per che contiene le informazioni dei file
+    fstat(file_descriptor, &file_info);                 // fstat, scrive nella struttura tutte le informazioni dei file
+    int numero_valori = file_info.st_size;              // salvo il numero dei byte al suo interno
     char buf[numero_valori];                            // buffer di lettura
     int i = 0;                                          // variabile utilizzata per la scrittura delle stringhe
     char *righe[ordine_matrice];                        // scrivo nell'array tutte le righe splittate in base al \n
@@ -152,7 +137,6 @@ int *scrivi_matrice(int shmid, int file_descriptor, int numero_valori, int ordin
         print_error("Errore durante la lettura completa del buffer!\n");
         close_all();
     }
-
 
     p = strtok (buf, "\n");                             // salvo la prima striga splitta
     while (p != NULL){                                  // faccio un ciclo dalla fine verso l'inizio

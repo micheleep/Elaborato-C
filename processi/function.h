@@ -36,14 +36,14 @@ typedef struct {
 union semun {
     int val;
     struct semid_ds *buf;
-    ushort *array;
+    short *array;
 } stato_sem;
 
 // funzione per la stampa a video
-void print(char string[]);
+void print(char *string);
 
 // funzione per stampa su stderror
-void print_error(char string[]);
+void print_error(char *string);
 
 // funzione che stampa un intero a video
 void print_integer(int value);
@@ -51,14 +51,11 @@ void print_integer(int value);
 // funzione che controlla se la matrice è quadrata
 int controllo_matrice(int file_descriptor);
 
-// conta i caratteri presenti all'interno della matrice
-int conta_valori_matrice(int file_descriptor);
-
 // funzione che ritorna ID dove viene creata la zona di memoria
 int get_memoria_condivisa_padre(key_t key, int ordine);
 
 // funzione che scrive in memoria condivisa la matrice
-int *scrivi_matrice(int shmid, int file_descriptor, int numero_valori, int ordine_matrice);
+int *scrivi_matrice(int shmid, int file_descriptor, int ordine_matrice);
 
 // funzione che moltiplica la riga per la colonna
 void moltiplica(int *shared_memory_a, int *shared_memory_b, int *shared_memory_c_molt, int riga_i, int riga_j, int ordine_matrice);
