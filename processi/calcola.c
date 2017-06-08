@@ -89,14 +89,13 @@ int main(int argc, char *argv[]) {
 
     ///@brief Allocazione delle memorie condivise tramite funzioni apposite
     shmid_a = get_memoria_condivisa_padre(keyA, ordine_mat_a);                                  // creo la memoria condivisa
-    shared_memory_a = scrivi_matrice(shmid_a, fd_a, conta_valori_matrice(fd_a), ordine_mat_a);  // scrivo all'interno della memoria condivisa creata
+    shared_memory_a = scrivi_matrice(shmid_a, fd_a, ordine_mat_a);  // scrivo all'interno della memoria condivisa creata
 
     shmid_b = get_memoria_condivisa_padre(keyB, ordine_mat_b);
-    shared_memory_b = scrivi_matrice(shmid_b, fd_b, conta_valori_matrice(fd_b), ordine_mat_b);
+    shared_memory_b = scrivi_matrice(shmid_b, fd_b, ordine_mat_b);
 
     shmid_c_molt = get_memoria_condivisa_padre(keyC_molt, ordine_mat_a);
     shared_memory_c_molt = (int *) shmat(shmid_c_molt, NULL, 0);
-
 
     if ((shmid_c_sum = shmget(keyC_sum, sizeof(int), 0666 | IPC_CREAT | IPC_EXCL)) == -1)       // creo una area di memoria per un intero
         print_error("Errore durante la creazione del segmento di memoria in calcola.c!\n");
@@ -144,9 +143,9 @@ int main(int argc, char *argv[]) {
                 print_error("Errore EXEC!\n");
         }
         else {
-            print("Figlio in esecuzione : ");
+            print("Figlio ");
             print_integer(j+1);
-            print("\n");
+            print(" sta esegundo la moltiplicazione!\n");
             if (j < ordine_mat_a * ordine_mat_a) {                                              // PADRE
                 msg_send = riempi_struct('M', riga, colonna);                                   // scrivo nella struttura l'operazione da eseguire
 
@@ -226,13 +225,13 @@ int main(int argc, char *argv[]) {
             n_operazioni--;                                                                     // decremento le operazioni da svolgere
         }
     }
-    print("Risultato finale della somma : ");                                                   // stampo il risultato della somma a video
+    print("\nRisultato finale della somma : ");                                                   // stampo il risultato della somma a video
     print_integer(*shared_memory_c_sum);
     print("\n");
 
     ///@brief Scrittura su file della matrice C derivata dalla moltiplicazione
 
-    string = (char *) malloc(sizeof(char) * 20);
+    string = (char *) malloc(sizeof(char) * 20);                                                // alloco in memoria uno spazio per la strina
 
     for (j = 0; j < ordine_mat_a*ordine_mat_a ; j++) {
         sprintf(string, "%d", *(shared_memory_c_molt+j));                                       // scrivo la stringa su una variabile temporanea diciamo
@@ -252,6 +251,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    free(string);                                                                               // dealloco lo spazio inizializzato per il puntatore alla stringa
+
     ///@brief Chiusura di tutti i processi, tramite il carattere E
     for (int i = 0; i < np_terminale; i++) {                                                    // chiude i processi che sono in giro a non fare nulla
         msg_send = riempi_struct('E', i, i);
@@ -263,7 +264,7 @@ int main(int argc, char *argv[]) {
 
     ///@brief Aspetto finchè tutti i processi non vengono chiusi
     for (int i = 0; i < np_terminale ; i++)
-        msgrcv(id_mess, (void *) &msg, sizeof(msg) - sizeof(msg.mtype), 2, 0);                      // ricevo gli elementi di quel processo
+        msgrcv(id_mess, (void *) &msg, sizeof(msg) - sizeof(msg.mtype), 2, 0);                  // ricevo gli elementi di quel processo
 
     ///@brief Rimozione di tutte le IPC
     shmctl(shmid_a, IPC_RMID, 0);                                                               // rimuovo tutte le aree di memoria
