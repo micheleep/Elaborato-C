@@ -32,8 +32,8 @@ int main(int argc, char *argv[]) {
     pthread_t threads[atoi(argv[4])*atoi(argv[4])];                                             // creo un vettore di n thread quante il quadrato dell'ordine delle matrici
     int counter = 0;                                                                            // contatore delle thread
     int value = 0;                                                                              // valore di ritorno della creazione delle thread --> errore
-    char *string[5];                                                                            // stringa utilizzata per la stampa su file
-
+    char *string;                                                                               // stringa utilizzata per la stampa su file
+    message msg_to_thread[atoi(argv[4])*atoi(argv[4])];                                         // operazioni che devono essere effettuate dalle thread
     signal(SIGINT, close_all);
 
     /**@brief Controlli eseguiti sul main :
@@ -68,10 +68,18 @@ int main(int argc, char *argv[]) {
 
     ///@brief Allocazione delle memorie condivise tramite funzioni apposite
     shmid_a = get_memoria_condivisa_padre(keyA, ordine_mat_a);                                  // creo la memoria condivisa
-    shared_memory_a = scrivi_matrice(shmid_a, fd_a, conta_valori_matrice(fd_a), ordine_mat_a);  // scrivo all'interno della memoria condivisa creata
+
+    if ((shared_memory_a = (int *) shmat(shmid_a, NULL, 0)) == (void *) -1)                     // mi "attacco" all'area di memoria creata nel main
+        print_error("Errore durante la creazione del segmento di memoria!\n");
+
+    scrivi_matrice(shared_memory_a, fd_a, ordine_mat_a);  // scrivo all'interno della memoria condivisa creata
 
     shmid_b = get_memoria_condivisa_padre(keyB, ordine_mat_b);
-    shared_memory_b = scrivi_matrice(shmid_b, fd_b, conta_valori_matrice(fd_b), ordine_mat_b);
+
+    if ((shared_memory_b = (int *) shmat(shmid_b, NULL, 0)) == (void *) -1)
+        print_error("Errore durante la creazione del segmento di memoria!\n");
+
+    scrivi_matrice(shared_memory_b, fd_b, ordine_mat_b);
 
     shmid_c_molt = get_memoria_condivisa_padre(keyC_molt, ordine_mat_a);
     shared_memory_c_molt = (int *) shmat(shmid_c_molt, NULL, 0);
@@ -88,15 +96,15 @@ int main(int argc, char *argv[]) {
     for (riga = 0; riga < ordine_mat_a; riga++){                                                // ciclo sulle righe
         for (colonna = 0; colonna < ordine_mat_b; colonna++) {                                  // ciclo sulle colonne
             print("Creo la thread ");
-            print_integer(counter+1);
+            print_integer(counter+1);                           // TODO coredump here
             print(" per la moltiplicazione!\n");
-            message *msg_to_thread = (message *) malloc(sizeof(message));                       // operazioni che devono essere effettuate dalle thread
 
-            msg_to_thread->ordine_matrice = ordine_mat_a;
-            msg_to_thread->colonna = colonna;
-            msg_to_thread->riga = riga;
+            msg_to_thread[counter].ordine_matrice = ordine_mat_a;
+            msg_to_thread[counter].colonna = colonna;
+            msg_to_thread[counter].riga = riga;
 
-            value = pthread_create(&threads[counter], NULL, moltiplica, msg_to_thread);         // creo la thread
+            value = pthread_create(&threads[counter], NULL, moltiplica, &msg_to_thread[counter]);         // creo la thread
+
             if (value == -1)
                 print_error("Errore nella creazione della thread!");
 
@@ -112,13 +120,11 @@ int main(int argc, char *argv[]) {
         print_integer(i+1);
         print(" per la somma!\n");
 
-        message *msg_to_thread = (message *) malloc(sizeof(message));                           // passaggio dei valori corretti
+        msg_to_thread[i].ordine_matrice = ordine_mat_a;
+        msg_to_thread[i].riga = i;
+        msg_to_thread[i].colonna = i;
 
-        msg_to_thread->ordine_matrice = ordine_mat_a;
-        msg_to_thread->riga = i;
-        msg_to_thread->colonna = i;
-
-        value = pthread_create(&threads[i], NULL, somma, msg_to_thread);                        // creo la thread che deve essere eseguita
+        value = pthread_create(&threads[i], NULL, somma, &msg_to_thread[i]);                        // creo la thread che deve essere eseguita
 
         if (value == -1)
             print_error("Errore nella creazione delle thread per la somma!\n");
@@ -135,6 +141,9 @@ int main(int argc, char *argv[]) {
     print("\n");
 
     ///@brief Scrittura su file della matrice C derivata dalla moltiplicazione
+
+    string = (char *) malloc(sizeof(char) * 20);                                                // alloco in memoria uno spazio per la strina
+
     for (int j = 0, counter = 0; j < ordine_mat_a*ordine_mat_a ; j++) {
         sprintf(string, "%d", *(shared_memory_c_molt+j));                                       // scrivo la stringa su una variabile temporanea diciamo
         write(fd_c, string, strlen(string));                                                    // scrivo su file
@@ -148,10 +157,12 @@ int main(int argc, char *argv[]) {
         else {
             if(write(fd_c, ";", sizeof(char)) == -1)                                            // oppure il ;
                 print_error("Problema nella scrittura su file!\n");
-                
+
             counter++;
         }
     }
+
+    free(string);                                                                               // dealloco lo spazio inizializzato per il puntatore alla stringa
 
     pthread_mutex_destroy(&mutex);                                                              // distruzione del mutex
 
