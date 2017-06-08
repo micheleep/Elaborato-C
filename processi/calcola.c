@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     int riga = 0, colonna = 0;                                                                  // riga e colonna che vengono eseguite
     int j = 0;                                                                                  // contatore usato nei cicli for
     int n_operazioni = 0;                                                                       // numero delle operazioni totali che si devono compiere
-    char *string[5];                                                                            // stringa utilizzata per la stampa su file
+    char *string;                                                                               // stringa utilizzata per la stampa su file
     int counter = 0;                                                                            // contatore utilizzato per la stampa su file
 
     signal(SIGINT, close_all);
@@ -231,9 +231,12 @@ int main(int argc, char *argv[]) {
     print("\n");
 
     ///@brief Scrittura su file della matrice C derivata dalla moltiplicazione
+
+    string = (char *) malloc(sizeof(char) * 20);
+
     for (j = 0; j < ordine_mat_a*ordine_mat_a ; j++) {
         sprintf(string, "%d", *(shared_memory_c_molt+j));                                       // scrivo la stringa su una variabile temporanea diciamo
-        write(fd_c, &string, strlen(&string));                                                   // scrivo su file §
+        write(fd_c, string, strlen(string));                                                    // scrivo su file §
 
         if (counter / (ordine_mat_a-1) == 1) {                                                  // stampiamo il valore \n che corrisponde con a capo
             if(write(fd_c, "\n", sizeof(char)) == -1)
