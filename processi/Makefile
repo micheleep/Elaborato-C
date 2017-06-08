@@ -7,14 +7,12 @@ EXECUTABLE=calcola.x worker.x
 
 # config
 CC=gcc
-CFLAGS= -c -w -std=c99
+CFLAGS= -c -std=gnu99
 LD=gcc
 
 # target
 all: $(EXECUTABLE)
 	@echo Building $(EXECUTABLE)
-	@echo Generating doxygen
-	@doxygen
 
 calcola.x: calcola.o function.o
 	$(LD) -o $@ $^
@@ -30,6 +28,10 @@ worker.o: worker.c function.h
 
 function.o: function.c
 	$(CC) $(CFLAGS) -o $@ $<
+
+doc: $(OBJS)
+	@echo Generating doxygen
+	@doxygen
 
 clean:
 	rm -f $(EXECUTABLE)

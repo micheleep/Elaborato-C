@@ -7,15 +7,13 @@ EXECUTABLE=calcola.x
 
 # config
 CC=gcc
-CFLAGS= -c -w -std=c99
+CFLAGS= -c -w -std=gnu99
 LD=gcc
 LDFLAGS= -Llib
 
 # target
 all: $(EXECUTABLE)
 	@echo Building $(EXECUTABLE)
-	@echo Generating doxygen
-	@doxygen
 
 $(EXECUTABLE): $(OBJS)
 	@echo Building $@
@@ -29,9 +27,13 @@ calcola.o: calcola.c function.h
 	@echo Building $@
 	@ $(CC) $(CFLAGS) -o $@ $<
 
+doc: $(OBJS)
+	@echo Generating doxygen
+	@doxygen
+
 clean:
 	rm -f $(EXECUTABLE)
 	rm -f $(OBJS)
-	rm -rf html 
+	rm -rf html
 
 .phony: all clean
