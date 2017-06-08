@@ -117,11 +117,16 @@ int main(int argc, char *argv[]){
         ///@brief Usciamo dal ciclo solamente se ci arriva il comando da parte del padre
     } while (msg_receive.operazione != 'E');                                                    // stiamo qui dentro finchè il padre non dice di terminare
 
+    ///@brief Mando un messaggio di terminazione per dire che posso eliminare le risorse
+    msg.mtype = 2;
+    msgsnd(id_mess, &msg, sizeof(msg) - sizeof(msg.mtype), 1);
+
+
     ///@brief Rilascio delle risorse
-    shmdt(shmid_a);                                                                             // faccio la detach di tutti i segmenti di memoria che mi sono creato
-    shmdt(shmid_b);
-    shmdt(shmid_c_molt);
-    shmdt(shmid_c_sum);
+    shmdt(shared_memory_a);                                                                     // faccio la detach di tutti i segmenti di memoria che mi sono creato
+    shmdt(shared_memory_b);
+    shmdt(shared_memory_c_molt);
+    shmdt(shared_memory_c_sum);
 
     return 0;
 

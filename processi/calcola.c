@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
     ///@brief Scrittura su file della matrice C derivata dalla moltiplicazione
     for (j = 0; j < ordine_mat_a*ordine_mat_a ; j++) {
         sprintf(string, "%d", *(shared_memory_c_molt+j));                                       // scrivo la stringa su una variabile temporanea diciamo
-        write(fd_c, string, strlen(string));                                                    // scrivo su file
+        write(fd_c, &string, strlen(&string));                                                   // scrivo su file §
 
         if (counter / (ordine_mat_a-1) == 1) {                                                  // stampiamo il valore \n che corrisponde con a capo
             if(write(fd_c, "\n", sizeof(char)) == -1)
@@ -255,7 +255,12 @@ int main(int argc, char *argv[]) {
         // finchè non mando questa operazione i processi non vengono chiusi
         if ((write(array_pipe[i], &msg_send, sizeof(message))) ==-1)                            // invio tramite pipe il messaggio di terminazione
             print_error("Errore nella terminazione dei processi!\n");
+
     }
+
+    ///@brief Aspetto finchè tutti i processi non vengono chiusi
+    for (int i = 0; i < np_terminale ; i++)
+        msgrcv(id_mess, (void *) &msg, sizeof(msg) - sizeof(msg.mtype), 2, 0);                      // ricevo gli elementi di quel processo
 
     ///@brief Rimozione di tutte le IPC
     shmctl(shmid_a, IPC_RMID, 0);                                                               // rimuovo tutte le aree di memoria
