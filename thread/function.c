@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <pthread.h>
+#include <sys/stat.h>
 #include "function.h"
 
 /**
@@ -92,45 +93,6 @@ int controllo_matrice(int file_descriptor){
 }
 
 /**
- * Funzione che crea la memoria condivisa e ne ritorna l'id
- *
- * @param key
- * @param ordine
- * @return il valore dove viene creata la memoria condivisa
- */
-int get_memoria_condivisa_padre(key_t key, int ordine){
-
-    int shmid = 0;
-
-    if ((shmid = shmget(key, ordine*ordine*sizeof(int), 0666 | IPC_CREAT | IPC_EXCL)) == -1){       // creo l'area di memoria condivisa, con IPC_CREAT
-        print_error("Errore durante la creazione del segmento di memoria in calcola.c!\n");          // controllo il valore restituito, se -1 errore
-        close_all();
-        return 0;
-    }
-
-    return shmid;                                                                                   // ritorno il valore corretto
-}
-
-/**
- * Conta i caratteri che sono all'interno della matrice
- *
- * @param file_descriptor
- * @return il numero di caratteri letti
- */
-int conta_valori_matrice(int file_descriptor){
-
-    char *c;
-    int counter = 0;
-
-    lseek(file_descriptor, 0, 0);                               // mi posiziono all'inizio del file
-
-    while (read(file_descriptor, &c, 1))                        // conto tutti i valori (caratteri) che sono presenti all'interno del file
-        counter++;
-
-    return counter;                                             // ritorno il numero corretto di caratteri
-}
-
-/**
  * Inserisce in memoria condivisa la matrice che viene passata
  *
  * @param shmid
@@ -139,9 +101,11 @@ int conta_valori_matrice(int file_descriptor){
  * @param ordine_matrice passata come parametro
  * @return un puntatore alla cella di memoria condivisa di partenza
  */
-int *scrivi_matrice(int shmid, int file_descriptor, int numero_valori, int ordine_matrice){
+void scrivi_matrice(int* shared_memory, int file_descriptor, int ordine_matrice){
 
-    int *shared_memory;                                 // puntatore alla cella di memoria condivisa iniziale
+    struct stat file_info;                              // dichiaro la struct per che contiene le informazioni dei file
+    fstat(file_descriptor, &file_info);                 // fstat, scrive nella struttura tutte le informazioni dei file
+    int numero_valori = file_info.st_size;              // salvo il numero dei byte al suo interno
     char buf[numero_valori];                            // buffer di lettura
     int i = 0;                                          // variabile utilizzata per la scrittura delle stringhe
     char *righe[ordine_matrice];                        // scrivo nell'array tutte le righe splittate in base al \n
@@ -154,7 +118,6 @@ int *scrivi_matrice(int shmid, int file_descriptor, int numero_valori, int ordin
         print_error("Errore durante la lettura completa del buffer!\n");
         close_all();
     }
-
 
     p = strtok (buf, "\n");                             // salvo la prima striga splitta
     while (p != NULL){                                  // faccio un ciclo dalla fine verso l'inizio
@@ -172,20 +135,13 @@ int *scrivi_matrice(int shmid, int file_descriptor, int numero_valori, int ordin
         }
     }
 
-    shared_memory = (int *) malloc(sizeof(int));        // deve essere dichiarato --> altrimenti segmentation fault
-
-                                                        // mi "attacco" all'area di memoria creata nel main
-    if ((shared_memory = (int *) shmat(shmid, 0, 0)) == (void *) -1)
-        print_error("Errore durante la creazione del segmento di memoria!\n");
-
     // scrive nell area di memoria creata
-
     for (int j = 0; j < ordine_matrice*ordine_matrice; j++)
         *(shared_memory + j) = valori[j];                 // salvo negli indirizzi di memoria tutti gli interi
 
-    memset(buf, 0, sizeof(int)*numero_valori);          // resetto il buffer, potrebbero esserci degli errori nella lettura della seconda matrice
+    memset(buf, 0, sizeof(char)*numero_valori);          // resetto il buffer, potrebbero esserci degli errori nella lettura della seconda matrice
 
-    return shared_memory;
+    return;
 }
 
 /**
@@ -203,6 +159,7 @@ void *moltiplica(void *value) {
     int *shared_memory_a_new, *shared_memory_b_new, *shared_memory_c_molt_new;          // siccome le thread condividono area e memoria condivisa dobbiamo salvare il
                                                                                         // nuovo valore del puntatore in un puntatore temporaneo
     int riga, colonna, ordine_matrice, risultato = 0;                                   // variabili temporanee
+
     message *msg_from_thread = (message *) value;                                       // copio tutto ciò che all'interno della struct passata dalla thread
 
     riga = msg_from_thread->riga;                                                       // copio in riga il valore della riga da moltiplicare
@@ -216,6 +173,7 @@ void *moltiplica(void *value) {
     for (int i = 0; i < ordine_matrice; i++)                                            // salvo all'interno di un array la riga
         righe[i] = *(shared_memory_a_new + i);
 
+
     shared_memory_b_new = shared_memory_b +(colonna);                                   // anche qui mi posiziono nella zona corretta
 
     for (int i = 0; i < ordine_matrice; i++){                                           // salvo all'interno di un array la colonna
@@ -227,6 +185,7 @@ void *moltiplica(void *value) {
         risultato += (righe[i] * colonne[i]);
 
     shared_memory_c_molt_new = shared_memory_c_molt + (riga * ordine_matrice) + colonna;// mi posiziono nella locazione di memoria corretta
+
     *(shared_memory_c_molt_new) = risultato;                                            // scrivo all'interno della memoria il valore
 
     pthread_exit(NULL);
@@ -268,11 +227,6 @@ void *somma(void *value){
  *
  */
 void close_all(){
-
-    shmctl(shmid_a, IPC_RMID, 0);                                                               // rimuovo tutte le aree di memoria
-    shmctl(shmid_b, IPC_RMID, 0);
-    shmctl(shmid_c_molt, IPC_RMID, 0);
-    shmctl(shmid_c_sum, IPC_RMID, 0);
 
     pthread_mutex_destroy(&mutex);                                                              // distruzione del mutex
 

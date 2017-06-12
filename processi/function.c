@@ -170,7 +170,7 @@ int *scrivi_matrice(int shmid, int file_descriptor, int ordine_matrice){
     for (int j = 0; j < ordine_matrice*ordine_matrice; j++)
         *(shared_memory+j) = valori[j];                 // salvo negli indirizzi di memoria tutti gli interi
 
-    memset(buf, 0, sizeof(int)*numero_valori);          // resetto il buffer, potrebbero esserci degli errori nella lettura della seconda matrice
+    memset(buf, 0, numero_valori);          // resetto il buffer, potrebbero esserci degli errori nella lettura della seconda matrice
 
     return shared_memory;
 }
