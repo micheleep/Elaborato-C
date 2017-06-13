@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
     if ((fd_b = open(argv[2], O_RDONLY, 0644)) == -1)                                           // apertura del secondo file in sola lettura
         print_error("Non è possibile aprire il secondo file!\n");
 
-    if ((fd_c = open(argv[3], O_RDWR, 0666)) == -1)                                             // apertura del terzo file in lettura e scrittura
+    if ((fd_c = open(argv[3], O_RDWR | O_TRUNC , 0666)) == -1)                                             // apertura del terzo file in lettura e scrittura
         print_error("Non è possibile aprire o scrivere nel terzo file!\n");
 
     ordine_mat_a = controllo_matrice(fd_a);                                                     // devono essere quadrate ed uguali fra di loro
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
         else {
             print("Figlio ");
             print_integer(j+1);
-            print(" sta esegundo la moltiplicazione!\n");
+            print(" sta eseguendo la moltiplicazione!\n");
             if (j < ordine_mat_a * ordine_mat_a) {                                              // PADRE
                 msg_send = riempi_struct('M', riga, colonna);                                   // scrivo nella struttura l'operazione da eseguire
 
@@ -179,9 +179,9 @@ int main(int argc, char *argv[]) {
         if ((write(array_pipe[msg.numero_processo], &msg_send, sizeof(message))) == -1)
             print_error("Errore di scrittura nella pipe per la moltiplicazione!");              // scrivo nel file descriptor del processo eseguito quello che deve fare
 
-        print("Figlio in esecuzione : ");
-        print_integer(msg.numero_processo + 1);
-        print("\n");
+        print("Figlio ");
+        print_integer(msg.numero_processo+1);
+        print(" sta eseguendo la moltiplicazione!\n");
 
         j++;                                                                                    // aumento il valore del processo eseguito
         msgrcv(id_mess, (void *) &msg, sizeof(msg) - sizeof(msg.mtype), 1, 0);                  // ricevo gli elementi di quel processo
@@ -227,7 +227,7 @@ int main(int argc, char *argv[]) {
     }
     print("\nRisultato finale della somma : ");                                                   // stampo il risultato della somma a video
     print_integer(*shared_memory_c_sum);
-    print("\n");
+    print("\n\n");
 
     ///@brief Scrittura su file della matrice C derivata dalla moltiplicazione
 

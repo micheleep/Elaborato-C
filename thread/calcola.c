@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     if ((fd_b = open(argv[2], O_RDONLY, 0644)) == -1)                                           // apertura del secondo file in sola lettura
         print_error("Non è possibile aprire il secondo file!\n");
 
-    if ((fd_c = open(argv[3], O_RDWR, 0666)) == -1)                                             // apertura del terzo file in lettura e scrittura
+    if ((fd_c = open(argv[3], O_RDWR | O_TRUNC , 0666)) == -1)                                             // apertura del terzo file in lettura e scrittura
         print_error("Non è possibile aprire o scrivere nel terzo file!\n");
 
     ordine_mat_a = controllo_matrice(fd_a);                                                     // devono essere quadrate ed uguali fra di loro
@@ -61,34 +61,14 @@ int main(int argc, char *argv[]) {
     if(ordine_mat_a != atoi(argv[4]))                                                           // controllo che l'ordine inserito da terminale sia uguale
         print_error("Il valore dell'ordine inserito da terminale non corrisponde con le matrici date!\nModificare il parametri inserito in input e riprovare!\n");
 
-    ///@brief Creazioni delle chaivi univoche tramite ftok(- , -);
-    keyA = ftok("/tmp", 'A');                                                                   // inizializzazione delle chaivi usate per la shared memory
-    keyB = ftok("/tmp", 'B');
-    keyC_molt = ftok("/tmp", 'M');
+    ///@brief Creazione dell'area di memoria dove scrivo le matrici.
+    shared_memory_a = (int *) malloc(sizeof(int) * ordine_mat_a * ordine_mat_a);                // alloco lo spazio per le matrici, successivamente ci scrivo all'interno
+    shared_memory_b = (int *) malloc(sizeof(int) * ordine_mat_b * ordine_mat_b);
+    shared_memory_c_molt = (int *) malloc(sizeof(int) * ordine_mat_a * ordine_mat_b);
+    shared_memory_c_sum = (int *) malloc(sizeof(int));
 
-    ///@brief Allocazione delle memorie condivise tramite funzioni apposite
-    shmid_a = get_memoria_condivisa_padre(keyA, ordine_mat_a);                                  // creo la memoria condivisa
-
-    if ((shared_memory_a = (int *) shmat(shmid_a, NULL, 0)) == (void *) -1)                     // mi "attacco" all'area di memoria creata nel main
-        print_error("Errore durante la creazione del segmento di memoria!\n");
-
-    scrivi_matrice(shared_memory_a, fd_a, ordine_mat_a);  // scrivo all'interno della memoria condivisa creata
-
-    shmid_b = get_memoria_condivisa_padre(keyB, ordine_mat_b);
-
-    if ((shared_memory_b = (int *) shmat(shmid_b, NULL, 0)) == (void *) -1)
-        print_error("Errore durante la creazione del segmento di memoria!\n");
-
+    scrivi_matrice(shared_memory_a, fd_a, ordine_mat_a);                                        // scrivo all'interno della memoria condivisa creata
     scrivi_matrice(shared_memory_b, fd_b, ordine_mat_b);
-
-    shmid_c_molt = get_memoria_condivisa_padre(keyC_molt, ordine_mat_a);
-    shared_memory_c_molt = (int *) shmat(shmid_c_molt, NULL, 0);
-
-
-    if ((shmid_c_sum = shmget(keyC_sum, sizeof(int), 0666 | IPC_CREAT | IPC_EXCL)) == -1)       // creo una area di memoria per un intero
-        print_error("Errore durante la creazione del segmento di memoria in calcola.c!\n");
-
-    shared_memory_c_sum = (int *) shmat(shmid_c_sum, NULL, 0);
 
     pthread_mutex_init(&mutex, NULL);                                                           // inizializzazione del mutex
 
@@ -170,15 +150,15 @@ int main(int argc, char *argv[]) {
 
     pthread_mutex_destroy(&mutex);                                                              // distruzione del mutex
 
-    ///@brief Rimozione di tutte le IPC
-    shmctl(shmid_a, IPC_RMID, 0);                                                               // rimuovo tutte le aree di memoria
-    shmctl(shmid_b, IPC_RMID, 0);
-    shmctl(shmid_c_molt, IPC_RMID, 0);
-    shmctl(shmid_c_sum, IPC_RMID, 0);
-
-    close(fd_a);                                                                                // chiusura dei file descriptor
+    ///@brief Chiusura file descriptor e libero la memoria                                      // chiusura dei file descriptor
+    close(fd_a),
     close(fd_b);
     close(fd_c);
+
+    free(shared_memory_a);
+    free(shared_memory_b);
+    free(shared_memory_c_molt);
+    free(shared_memory_c_sum);
 
     pthread_exit(NULL);                                                                         // terminazione della "thread" del processo padre
 }
