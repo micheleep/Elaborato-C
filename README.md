@@ -3,6 +3,7 @@
 ## Descrizione
 Semplice implementazione di un prodotto tra matrici in C.
 Il tutto viene implementato e la moltiplicazione vengono eseguite in due modalità :
+
       - processi
       - thread
 
@@ -13,6 +14,7 @@ Eseguire " make clean " per rimuovere i file oggetti e gli eseguibili, rimuove i
 
 ## Esecuzione
 Eseguire con :
+
                 - ./calcola.x matA matB matC 4 6
                 - ./calcola.x matA matB matC 4
 ### Modalità di Esecuzione
